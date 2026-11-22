@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { Users, Plus, Trash2, Copy, Check, ArrowRight, Share2, Calculator, Receipt } from 'lucide-react';
 import { validateAmount } from '../utils/security';
@@ -97,37 +97,6 @@ export default function SplitBill() {
           tags: [],
         }
       });
-    });
-    setAddedToExpenses(true);
-    setTimeout(() => setAddedToExpenses(false), 3000);
-  }
-
-    const lines = [
-      `🧾 *Bill Split: ${billTitle}*`,
-      `💰 *Total Amount:* ${formatCurrency(total)}`,
-      `👥 *Split equally among ${numPeople} people:*`,
-      ...friends.map(f => `  • ${f}: ${formatCurrency(perPersonShare)}`),
-      `\n💳 *Paid by:* ${payer}`,
-      payer === 'You' ? `👉 Please send your share (${formatCurrency(perPersonShare)}) via UPI!` : `👉 You need to send ${formatCurrency(perPersonShare)} to ${payer}!`,
-      `\n_Generated via StudyPocket AI Student Finance_`
-    ];
-    const text = lines.join('\n');
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
-  function addShareToExpenses() {
-    if (addedToExpenses) return;
-    dispatch({
-      type: 'ADD_EXPENSE',
-      payload: {
-        id: Date.now().toString(),
-        amount: Math.round(perPersonShare),
-        category: 'Food',
-        description: `My share for: ${billTitle} (${friends.length} people split)`,
-        date: new Date().toISOString().slice(0, 10),
-      }
     });
     setAddedToExpenses(true);
     setTimeout(() => setAddedToExpenses(false), 3000);
