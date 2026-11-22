@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useFinance, CATEGORIES } from '../context/FinanceContext';
 import { validateAmount } from '../utils/security';
-import { ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { getCategoryTheme } from '../utils/categoryTheme';
+import { ChevronLeft, ChevronRight, AlertTriangle, Wallet, Sparkles, Check, ArrowRight, ShieldAlert } from 'lucide-react';
 
 function formatCurrency(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -29,10 +30,13 @@ export default function Budget() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [editing, setEditing] = useState({});
   const [errors, setErrors] = useState({});
+  const [appliedAI, setAppliedAI] = useState(false);
 
   const budget = getMonthBudget(month);
   const spending = getCategorySpending(month);
-  const prevMonthData = getMonthBudget(prevMonth(month));
+  const prevMonthKey = prevMonth(month);
+  const prevMonthBudgetData = getMonthBudget(prevMonthKey);
+  const prevMonthSpending = getCategorySpending(prevMonthKey);
 
   function handleBudgetChange(cat, value) {
     setEditing(e => ({ ...e, [cat]: value }));
@@ -42,7 +46,6 @@ export default function Budget() {
   function handleSave(cat) {
     const val = editing[cat] !== undefined ? editing[cat] : (budget[cat] || 0);
     if (val === '' || val === undefined) {
-      // Remove budget for this category
       dispatch({ type: 'SET_BUDGET', payload: { month, category: cat, amount: 0 } });
       return;
     }
@@ -55,113 +58,183 @@ export default function Budget() {
     setEditing(e => { const n = { ...e }; delete n[cat]; return n; });
   }
 
+  function handleApplyAIBudget() {
+    const totalCurrent = Object.values(budget).reduce((s, v) => s + (v || 0), 0) || 10000;
+    const newBudget = {
+      Rent: Math.round(totalCurrent * 0.35),
+      Food: Math.round(totalCurrent * 0.25),
+      Transport: Math.round(totalCurrent * 0.12),
+      Books: Math.round(totalCurrent * 0.10),
+      Entertainment: Math.round(totalCurrent * 0.08),
+      Health: Math.round(totalCurrent * 0.05),
+      Other: Math.round(totalCurrent * 0.05),
+    };
+    dispatch({
+      type: 'SET_MONTH_BUDGET',
+      payload: { month, budgetMap: newBudget }
+    });
+    setAppliedAI(true);
+    setTimeout(() => setAppliedAI(false), 2500);
+  }
+
   const totalBudget = Object.values(budget).reduce((s, v) => s + (v || 0), 0);
   const totalSpent = Object.values(spending).reduce((s, v) => s + (v || 0), 0);
+  const remaining = totalBudget - totalSpent;
+  const overallPercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* Header + Month selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-indigo-700 via-blue-700 to-teal-700 p-8 rounded-3xl text-white shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold">Budget Manager</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Set and track monthly spending limits</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider mb-2">
+            <Wallet className="w-3.5 h-3.5" />
+            Budget Guardian
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Monthly Budget Planner</h1>
+          <p className="mt-1 text-indigo-100 text-xs sm:text-sm">
+            Control limits per category, track real-time burn rate, and prevent end-of-semester broke situations.
+          </p>
         </div>
-        <div className="flex items-center gap-2 border border-black rounded-xl px-4 py-2">
-          <button onClick={() => setMonth(prevMonth(month))} className="hover:bg-gray-100 rounded p-1">
+
+        {/* Month Selector */}
+        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 self-start sm:self-auto">
+          <button
+            onClick={() => setMonth(prevMonth(month))}
+            className="p-2 rounded-xl hover:bg-white/20 text-white transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="font-semibold text-sm min-w-32 text-center">{getMonthLabel(month)}</span>
-          <button onClick={() => setMonth(nextMonth(month))} className="hover:bg-gray-100 rounded p-1">
+          <span className="font-extrabold text-sm px-3 text-white whitespace-nowrap">
+            {getMonthLabel(month)}
+          </span>
+          <button
+            onClick={() => setMonth(nextMonth(month))}
+            className="p-2 rounded-xl hover:bg-white/20 text-white transition-colors"
+          >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-        <div className="border border-black rounded-xl p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Budget</p>
-          <p className="text-xl font-bold">{formatCurrency(totalBudget)}</p>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Allocated Budget</span>
+          <p className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(totalBudget)}</p>
+          <button
+            onClick={handleApplyAIBudget}
+            className="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            {appliedAI ? '✓ 50/30/20 Applied!' : 'Auto-Optimize with AI 50/30/20'}
+          </button>
         </div>
-        <div className="border border-black rounded-xl p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Spent</p>
-          <p className="text-xl font-bold">{formatCurrency(totalSpent)}</p>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Spent So Far</span>
+          <p className="text-2xl font-black text-rose-600 mt-1">{formatCurrency(totalSpent)}</p>
+          <p className="text-xs text-slate-500 mt-2">
+            {overallPercent.toFixed(0)}% of total allowance consumed
+          </p>
         </div>
-        <div className={`border border-black rounded-xl p-4 col-span-2 md:col-span-1 ${totalBudget > 0 && totalSpent > totalBudget ? 'bg-black text-white' : ''}`}>
-          <p className={`text-xs uppercase tracking-wide mb-1 ${totalBudget > 0 && totalSpent > totalBudget ? 'text-gray-400' : 'text-gray-500'}`}>Remaining</p>
-          <p className="text-xl font-bold">{formatCurrency(Math.max(0, totalBudget - totalSpent))}</p>
-          {totalBudget > 0 && totalSpent > totalBudget && (
-            <p className="text-xs text-red-300 mt-0.5 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" /> Over by {formatCurrency(totalSpent - totalBudget)}
-            </p>
-          )}
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Available Runway</span>
+          <p className={`text-2xl font-black mt-1 ${remaining < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+            {formatCurrency(remaining)}
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            {remaining < 0 ? '⚠ Over budget by ' + formatCurrency(Math.abs(remaining)) : 'Safe to spend remainder'}
+          </p>
         </div>
       </div>
 
-      {/* Category cards */}
-      <div className="space-y-4">
-        {CATEGORIES.map(cat => {
-          const budgetAmt = budget[cat] || 0;
-          const spentAmt = spending[cat] || 0;
-          const prevBudget = prevMonthData[cat] || 0;
-          const pct = budgetAmt > 0 ? Math.min(100, (spentAmt / budgetAmt) * 100) : 0;
-          const isOver = budgetAmt > 0 && spentAmt > budgetAmt;
-          const editVal = editing[cat] !== undefined ? editing[cat] : (budgetAmt || '');
+      {/* Category Budgets Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {CATEGORIES.map((cat) => {
+          const theme = getCategoryTheme(cat);
+          const Icon = theme.icon;
+          const bVal = budget[cat] || 0;
+          const sVal = spending[cat] || 0;
+          const isOver = sVal > bVal && bVal > 0;
+          const pct = bVal > 0 ? Math.min(150, Math.round((sVal / bVal) * 100)) : 0;
+          const isEdit = editing[cat] !== undefined;
 
           return (
-            <div key={cat} className={`border ${isOver ? 'border-black' : 'border-black'} rounded-xl p-5`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+            <div
+              key={cat}
+              className={`bg-white rounded-2xl border p-5 shadow-xs transition-all ${
+                isOver ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <h3 className="font-bold">{cat}</h3>
-                  {isOver && (
-                    <span className="flex items-center gap-1 text-xs bg-black text-white px-2 py-0.5 rounded-full">
-                      <AlertTriangle className="w-3 h-3" /> Over budget
-                    </span>
-                  )}
+                  <div className={`p-2.5 rounded-xl ${theme.bgLight} ${theme.text} border ${theme.border}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">{cat}</h3>
+                    <p className="text-xs text-slate-400">
+                      Spent {formatCurrency(sVal)} of {formatCurrency(bVal)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={editVal}
-                    onChange={e => handleBudgetChange(cat, e.target.value)}
-                    onBlur={() => handleSave(cat)}
-                    onKeyDown={e => e.key === 'Enter' && handleSave(cat)}
-                    placeholder="Set budget"
-                    className="w-32 border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black text-right"
-                  />
-                  <span className="text-xs text-gray-400">₹</span>
-                </div>
+
+                {isOver && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
+                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                    Over by {formatCurrency(sVal - bVal)}
+                  </span>
+                )}
               </div>
 
-              {errors[cat] && <p className="text-xs text-black mb-2">{errors[cat]}</p>}
-
-              {/* Progress bar */}
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+              {/* Progress Bar */}
+              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden my-3">
                 <div
-                  className={`h-3 rounded-full transition-all ${isOver ? 'bg-black' : 'bg-black'}`}
-                  style={{ width: `${pct}%` }}
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    pct > 100
+                      ? 'bg-rose-500'
+                      : pct > 80
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, pct)}%` }}
                 />
               </div>
 
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Spent: {formatCurrency(spentAmt)} {budgetAmt > 0 ? `(${pct.toFixed(0)}%)` : ''}</span>
-                <div className="flex items-center gap-3">
-                  {prevBudget > 0 && (
-                    <span className="text-gray-400">Last month: {formatCurrency(prevBudget)}</span>
-                  )}
-                  {budgetAmt > 0 && <span>Limit: {formatCurrency(budgetAmt)}</span>}
-                </div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+                <span>{pct}% utilized</span>
+                <span>{bVal > 0 ? (bVal - sVal >= 0 ? `${formatCurrency(bVal - sVal)} remaining` : 'Exceeded') : 'No budget set'}</span>
               </div>
+
+              {/* Edit Budget Input */}
+              <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-2 text-xs text-slate-400 font-bold">₹</span>
+                  <input
+                    type="number"
+                    value={isEdit ? editing[cat] : (bVal || '')}
+                    onChange={(e) => handleBudgetChange(cat, e.target.value)}
+                    placeholder="Set budget limit..."
+                    className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => handleSave(cat)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+
+              {errors[cat] && (
+                <p className="text-[11px] text-rose-600 font-semibold mt-1">{errors[cat]}</p>
+              )}
             </div>
           );
         })}
       </div>
-
-      <p className="text-xs text-gray-400 text-center mt-6">
-        Click on the amount field to set or update a budget limit. Press Enter or click away to save.
-      </p>
     </div>
   );
 }

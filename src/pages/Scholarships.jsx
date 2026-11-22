@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { getItem, setItem, KEYS } from '../utils/storage';
-import { Search, Bookmark, BookmarkCheck, ExternalLink, Filter, X } from 'lucide-react';
+import { Search, Bookmark, BookmarkCheck, ExternalLink, Filter, GraduationCap, Sparkles, Calendar, CheckCircle2, Award } from 'lucide-react';
+import { EmptyGraphic } from '../components/Graphics';
 
 const SCHOLARSHIPS = [
   {
@@ -9,65 +10,71 @@ const SCHOLARSHIPS = [
     provider: 'Ministry of Education, India',
     amount: 'Up to ₹25,000/year',
     amountNum: 25000,
-    eligibility: 'Need-based',
-    deadline: '2024-10-31',
+    eligibility: 'Need-based (SC/ST/OBC/Minority)',
+    deadline: '2025-10-31',
     link: 'https://scholarships.gov.in',
-    description: 'Central government scholarships for SC/ST/OBC/Minority students. One of India\'s largest scholarship programmes.',
+    category: 'Government',
+    description: 'Central government scholarships for SC/ST/OBC/Minority students. One of India\'s largest scholarship programmes with direct DBT transfers.',
   },
   {
     id: 'ns2',
     name: 'Prime Minister\'s Scholarship Scheme (PMSS)',
     provider: 'Kendriya Sainik Board',
-    amount: '₹2,500/month (boys), ₹3,000/month (girls)',
+    amount: '₹30,000–₹36,000/year',
     amountNum: 36000,
     eligibility: 'Merit + Defence background',
-    deadline: '2024-11-30',
+    deadline: '2025-11-30',
     link: 'https://ksb.gov.in',
-    description: 'For wards and widows of ex-servicemen/policemen pursuing professional courses.',
+    category: 'Defence',
+    description: 'For wards and widows of ex-servicemen/policemen pursuing professional engineering, medical, and management courses.',
   },
   {
     id: 'ns3',
-    name: 'Inspire Scholarship',
+    name: 'Inspire Scholarship for Higher Education (SHE)',
     provider: 'Department of Science & Technology',
     amount: '₹80,000/year',
     amountNum: 80000,
-    eligibility: 'Merit (top 1% in Class 12)',
-    deadline: '2024-12-15',
+    eligibility: 'Merit (Top 1% in Class 12)',
+    deadline: '2025-12-15',
     link: 'https://online-inspire.gov.in',
-    description: 'For students who have secured top 1% marks in Class 12 and are pursuing BSc/MSc in natural sciences.',
+    category: 'Merit',
+    description: 'Prestigious national scholarship for students pursuing BSc, BS, Int. MSc in natural and basic sciences with research mentorship.',
   },
   {
     id: 'ns4',
-    name: 'Central Sector Scheme of Scholarships',
+    name: 'Central Sector Scheme of Scholarships (CSSS)',
     provider: 'Ministry of Education',
-    amount: '₹10,000/year (Degree), ₹20,000/year (PG)',
+    amount: '₹12,000–₹20,000/year',
     amountNum: 20000,
-    eligibility: 'Merit + Income < ₹8 LPA',
-    deadline: '2024-10-31',
+    eligibility: 'Merit + Family Income < ₹8 LPA',
+    deadline: '2025-10-31',
     link: 'https://scholarships.gov.in',
-    description: 'For meritorious students from low-income families pursuing higher education.',
+    category: 'Government',
+    description: 'Supports meritorious undergraduate college students from middle-income families across all accredited Indian universities.',
   },
   {
     id: 'ns5',
-    name: 'HDFC Bank Educational Crisis Scholarship',
-    provider: 'HDFC Bank Parivartan',
-    amount: '₹75,000 (one-time)',
+    name: 'HDFC Bank Parivartan Educational Crisis Grant',
+    provider: 'HDFC Bank CSR',
+    amount: 'Up to ₹75,000',
     amountNum: 75000,
-    eligibility: 'Need-based, family crisis',
-    deadline: '2024-09-30',
-    link: 'https://www.hdfcbank.com/scholarships',
-    description: 'For students facing financial crisis due to sudden family adversity (death of breadwinner, accident, etc.).',
+    eligibility: 'Need-based (Personal/Family Crisis)',
+    deadline: '2025-09-30',
+    link: 'https://www.hdfcbank.com',
+    category: 'Corporate',
+    description: 'Provides critical financial relief for students facing sudden family adversity, medical emergencies, or breadwinner loss.',
   },
   {
     id: 'ns6',
     name: 'Tata Capital Pankh Scholarship',
     provider: 'Tata Capital',
-    amount: 'Up to ₹10,000/year',
-    amountNum: 10000,
-    eligibility: 'Need-based, Class 11–UG',
-    deadline: '2024-08-31',
-    link: 'https://www.tatacapitalpankh.com',
-    description: 'Supports underprivileged students in Class 11 to under-graduation level across India.',
+    amount: 'Up to ₹12,000/year',
+    amountNum: 12000,
+    eligibility: 'Need-based, Class 11–Undergraduate',
+    deadline: '2025-08-31',
+    link: 'https://www.tatacapital.com',
+    category: 'Corporate',
+    description: 'Empowers underprivileged youth to pursue higher degrees without dropping out due to academic fee constraints.',
   },
   {
     id: 'ns7',
@@ -75,21 +82,23 @@ const SCHOLARSHIPS = [
     provider: 'Aditya Birla Group',
     amount: '₹65,000/year',
     amountNum: 65000,
-    eligibility: 'Merit, top IITs/IIMs/NITs',
-    deadline: '2024-10-15',
+    eligibility: 'Merit (IITs, NITs, BITS, IIMs)',
+    deadline: '2025-10-15',
     link: 'https://www.adityabirlascholarship.com',
-    description: 'Prestigious scholarship for students at top engineering and management institutions.',
+    category: 'Merit',
+    description: 'Prestigious fellowship for premier technical and management institute students, with industry internship opportunities.',
   },
   {
     id: 'ns8',
-    name: 'Reliance Foundation UG Scholarship',
+    name: 'Reliance Foundation Undergraduate Scholarship',
     provider: 'Reliance Foundation',
-    amount: '₹2,00,000/year',
+    amount: 'Up to ₹2,00,000',
     amountNum: 200000,
-    eligibility: 'Merit + Need, 60%+ in Class 12',
-    deadline: '2024-05-31',
-    link: 'https://rf.scholarshiponline.in',
-    description: 'For first-year undergraduate students in STEM and humanities, includes mentoring and leadership development.',
+    eligibility: 'Merit + Need (60%+ in Class 12)',
+    deadline: '2025-10-15',
+    link: 'https://www.reliancefoundation.org',
+    category: 'Corporate',
+    description: 'Competitive nationwide scholarship for first-year undergraduate students in STEM and humanities, including leadership camps.',
   },
   {
     id: 'ns9',
@@ -97,87 +106,47 @@ const SCHOLARSHIPS = [
     provider: 'Sitaram Jindal Foundation',
     amount: '₹1,500–₹5,000/month',
     amountNum: 60000,
-    eligibility: 'Need-based, 50%+ marks',
-    deadline: '2024-07-31',
+    eligibility: 'Need-based, 55%+ marks',
+    deadline: '2025-11-20',
     link: 'https://sitaramjindalfoundation.org',
-    description: 'Monthly stipends for meritorious and financially needy students across various courses.',
+    category: 'NGO',
+    description: 'Continuous monthly stipends for deserving students enrolled in polytechnic, degree, engineering, and medical courses.',
   },
   {
     id: 'ns10',
-    name: 'Buddy4Study Government Scholarships Aggregator',
-    provider: 'Buddy4Study',
-    amount: 'Varies',
-    amountNum: 50000,
-    eligibility: 'Various',
-    deadline: '2024-12-31',
-    link: 'https://www.buddy4study.com',
-    description: 'Aggregates 3,000+ scholarships. Use to discover hidden scholarships matching your profile.',
+    name: 'Google Generation Scholarship (APAC)',
+    provider: 'Google',
+    amount: 'USD 2,500 (~₹2,05,000)',
+    amountNum: 205000,
+    eligibility: 'Women & Underrepresented Groups in CS',
+    deadline: '2025-12-01',
+    link: 'https://buildyourfuture.withgoogle.com',
+    category: 'Tech',
+    description: 'Empowers women in computer science and gaming. Includes an invitation to Google retreat, coding workshops, and community.',
   },
   {
     id: 'ns11',
-    name: 'Kishore Vaigyanik Protsahan Yojana (KVPY)',
-    provider: 'Indian Institute of Science',
-    amount: '₹5,000–₹7,000/month',
-    amountNum: 84000,
-    eligibility: 'Merit, science students',
-    deadline: '2024-08-25',
-    link: 'https://kvpy.iisc.ac.in',
-    description: 'Fellowship for students pursuing basic sciences with strong aptitude for research.',
-  },
-  {
-    id: 'ns12',
-    name: 'ONGC Scholarship',
+    name: 'ONGC Scholarship for SC/ST/OBC Students',
     provider: 'Oil and Natural Gas Corporation',
     amount: '₹48,000/year',
     amountNum: 48000,
-    eligibility: 'Merit + Need, SC/ST/OBC',
-    deadline: '2024-09-15',
+    eligibility: 'Merit + Need, Reserved categories',
+    deadline: '2025-09-15',
     link: 'https://www.ongcindia.com',
-    description: 'For SC/ST/OBC students pursuing engineering or MBA degrees.',
+    category: 'Government',
+    description: 'Annual financial support for engineering, geology, and MBA students with excellent university track records.',
   },
   {
-    id: 'ns13',
-    name: 'Google Generation Scholarship',
-    provider: 'Google',
-    amount: 'USD 1,000',
-    amountNum: 83000,
-    eligibility: 'Merit, underrepresented groups in CS',
-    deadline: '2024-12-01',
-    link: 'https://buildyourfuture.withgoogle.com/scholarships',
-    description: 'For students from underrepresented groups studying computer science or related fields.',
-  },
-  {
-    id: 'ns14',
-    name: 'Fulbright-Nehru Fellowship',
-    provider: 'U.S. Embassy / USIEF',
-    amount: 'Full funding (US study)',
-    amountNum: 2000000,
-    eligibility: 'Merit, postgrad research',
-    deadline: '2024-07-15',
-    link: 'https://www.usief.org.in',
-    description: 'Prestigious fellowship for Indian students to pursue master\'s or research in the United States.',
-  },
-  {
-    id: 'ns15',
-    name: 'Manipal Excellence Scholarship',
-    provider: 'Manipal University',
-    amount: 'Up to 100% tuition waiver',
-    amountNum: 300000,
-    eligibility: 'Merit (90%+ in Class 12)',
-    deadline: '2024-06-30',
-    link: 'https://manipal.edu/mu/scholarships.html',
-    description: 'Tuition fee waiver up to 100% for students with exceptional Class 12 scores.',
-  },
-  {
-    id: 'ns16',
-    name: 'Swami Vivekananda Merit-Cum-Means Scholarship',
-    provider: 'West Bengal Government',
-    amount: '₹1,000–₹5,000/month',
+    id: 'ns12',
+    name: 'Swami Vivekananda Merit-Cum-Means (SVMCM)',
+    provider: 'State Government',
+    amount: '₹12,000–₹60,000/year',
     amountNum: 60000,
-    eligibility: 'Need + Merit, WB domicile',
-    deadline: '2024-10-15',
+    eligibility: 'Merit (60%+ marks) + Domicile',
+    deadline: '2025-10-15',
     link: 'https://svmcm.wbhed.gov.in',
-    description: 'State scholarship for meritorious West Bengal students in higher education.',
+    category: 'Government',
+    description: 'Comprehensive financial backing for students in higher secondary, diploma, undergraduate, and postgraduate programs.',
   },
 ];
 
@@ -190,10 +159,8 @@ function getDaysUntil(dateStr) {
 
 export default function Scholarships() {
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterMinAmt, setFilterMinAmt] = useState('');
-  const [filterMaxAmt, setFilterMaxAmt] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('');
+  const [onlyBookmarked, setOnlyBookmarked] = useState(false);
   const [bookmarks, setBookmarks] = useState(() => {
     return getItem(KEYS.BOOKMARKED_SCHOLARSHIPS, []);
   });
@@ -208,141 +175,176 @@ export default function Scholarships() {
 
   const filtered = useMemo(() => {
     return SCHOLARSHIPS.filter(s => {
+      if (onlyBookmarked && !bookmarks.includes(s.id)) return false;
+      if (filterCategory && s.category !== filterCategory) return false;
       if (search) {
         const q = search.toLowerCase();
         if (!s.name.toLowerCase().includes(q) && !s.provider.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q)) return false;
       }
-      if (filterType) {
-        const t = filterType.toLowerCase();
-        if (!s.eligibility.toLowerCase().includes(t)) return false;
-      }
-      if (filterMinAmt && s.amountNum < parseInt(filterMinAmt)) return false;
-      if (filterMaxAmt && s.amountNum > parseInt(filterMaxAmt)) return false;
       return true;
     });
-  }, [search, filterType, filterMinAmt, filterMaxAmt]);
+  }, [search, filterCategory, onlyBookmarked, bookmarks]);
 
-  const bookmarked = filtered.filter(s => bookmarks.includes(s.id));
-  const others = filtered.filter(s => !bookmarks.includes(s.id));
-  const displayed = [...bookmarked, ...others];
+  const categories = ['All', 'Government', 'Corporate', 'Merit', 'Tech', 'Defence'];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Scholarships</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          {SCHOLARSHIPS.length} scholarships curated for Indian students
-        </p>
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-800 p-8 rounded-3xl text-white shadow-xl">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider mb-2">
+            <GraduationCap className="w-3.5 h-3.5" />
+            Scholarship Discovery Engine
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Student Scholarships & Grants</h1>
+          <p className="mt-1 text-sky-100 text-xs sm:text-sm">
+            Curated list of verified national, corporate, and merit-based financial aid opportunities for Indian students.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 text-xs">
+          <Award className="w-5 h-5 text-yellow-300" />
+          <span>Over <strong>₹8.5 Lakhs+</strong> in active funding listed</span>
+        </div>
       </div>
 
-      {/* Search + Filters */}
-      <div className="border border-black rounded-xl p-4 mb-6">
-        <div className="flex gap-2 mb-3">
+      {/* Search & Filter Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search scholarships..."
-              className="w-full pl-9 pr-3 py-2 border border-black rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by scholarship name, provider, or keyword..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
+
           <button
-            onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-2 px-3 py-2 border border-black rounded-lg text-sm font-medium ${showFilters ? 'bg-black text-white' : ''}`}
+            onClick={() => setOnlyBookmarked(!onlyBookmarked)}
+            className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+              onlyBookmarked
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
           >
-            <Filter className="w-4 h-4" /> Filters
+            <BookmarkCheck className="w-4 h-4" />
+            Saved Only ({bookmarks.length})
           </button>
         </div>
-        {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t border-gray-200">
-            <div>
-              <label className="text-xs font-medium block mb-1">Eligibility Type</label>
-              <select value={filterType} onChange={e => setFilterType(e.target.value)}
-                className="w-full border border-black rounded-lg px-2 py-1.5 text-sm">
-                <option value="">All</option>
-                <option value="merit">Merit</option>
-                <option value="need">Need-based</option>
-                <option value="sports">Sports</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1">Min Amount (₹)</label>
-              <input type="number" value={filterMinAmt} onChange={e => setFilterMinAmt(e.target.value)}
-                className="w-full border border-black rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1">Max Amount (₹)</label>
-              <input type="number" value={filterMaxAmt} onChange={e => setFilterMaxAmt(e.target.value)}
-                className="w-full border border-black rounded-lg px-2 py-1.5 text-sm" placeholder="Any" />
-            </div>
-          </div>
-        )}
+
+        {/* Category Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pt-1">
+          {categories.map((cat) => {
+            const isSelected = (cat === 'All' && !filterCategory) || filterCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat === 'All' ? '' : cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  isSelected
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <p className="text-sm text-gray-500 mb-4">{displayed.length} scholarship{displayed.length !== 1 ? 's' : ''} found</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {displayed.map(s => {
-          const days = getDaysUntil(s.deadline);
-          const isBookmarked = bookmarks.includes(s.id);
-
-          return (
-            <div key={s.id} className={`border border-black rounded-xl p-5 flex flex-col ${isBookmarked ? 'bg-black text-white' : 'bg-white'}`}>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className={`font-bold text-sm leading-tight ${isBookmarked ? 'text-white' : 'text-black'}`}>{s.name}</h3>
-                <button
-                  onClick={() => toggleBookmark(s.id)}
-                  className={`flex-shrink-0 ${isBookmarked ? 'text-white' : 'text-gray-400 hover:text-black'}`}
-                  title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                >
-                  {isBookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-                </button>
-              </div>
-
-              <p className={`text-xs mb-3 ${isBookmarked ? 'text-gray-300' : 'text-gray-500'}`}>{s.provider}</p>
-              <p className={`text-xs mb-3 leading-relaxed ${isBookmarked ? 'text-gray-200' : 'text-gray-600'}`}>{s.description}</p>
-
-              <div className={`grid grid-cols-2 gap-2 text-xs mb-4 ${isBookmarked ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div>
-                  <span className="font-semibold">Amount:</span>
-                  <p className={`font-bold text-sm ${isBookmarked ? 'text-white' : 'text-black'}`}>{s.amount}</p>
-                </div>
-                <div>
-                  <span className="font-semibold">Eligibility:</span>
-                  <p>{s.eligibility}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-auto">
-                <div className="text-xs">
-                  <span className={isBookmarked ? 'text-gray-300' : 'text-gray-500'}>Deadline: {s.deadline}</span>
-                  <span className={`ml-2 font-medium px-2 py-0.5 rounded-full border ${
-                    days < 0 ? 'border-gray-500 text-gray-500' :
-                    days < 30 ? (isBookmarked ? 'border-white text-white' : 'border-black text-black bg-black text-white') :
-                    (isBookmarked ? 'border-gray-500 text-gray-300' : 'border-gray-300 text-gray-500')
-                  }`}>
-                    {days < 0 ? 'Closed' : days === 0 ? 'Today!' : `${days}d left`}
-                  </span>
-                </div>
-                <a
-                  href={s.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-1 text-xs font-medium underline ${isBookmarked ? 'text-white' : 'text-black'}`}
-                >
-                  Apply <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-          );
-        })}
+      {/* Results Count */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>Showing <strong>{filtered.length}</strong> available scholarships</span>
+        {bookmarks.length > 0 && <span>{bookmarks.length} bookmarked for deadline tracking</span>}
       </div>
 
-      {displayed.length === 0 && (
-        <div className="border border-black rounded-xl p-10 text-center">
-          <p className="text-gray-400">No scholarships match your filters.</p>
+      {/* Scholarships Grid */}
+      {filtered.length === 0 ? (
+        <EmptyGraphic
+          title="No scholarships found"
+          message="Try different search keywords or switch category filter to 'All'."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filtered.map((s) => {
+            const isBookmarked = bookmarks.includes(s.id);
+            const days = getDaysUntil(s.deadline);
+            const isHighValue = s.amountNum >= 50000;
+
+            return (
+              <div
+                key={s.id}
+                className={`bg-white rounded-2xl border p-6 shadow-xs flex flex-col justify-between transition-all hover:shadow-md ${
+                  isBookmarked
+                    ? 'border-blue-400 bg-blue-50/15 ring-2 ring-blue-100'
+                    : 'border-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        {s.category}
+                      </span>
+                      {isHighValue && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" /> High Value
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => toggleBookmark(s.id)}
+                      className={`p-1.5 rounded-xl transition-colors ${
+                        isBookmarked ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                      title={isBookmarked ? 'Remove bookmark' : 'Bookmark scholarship'}
+                    >
+                      {isBookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                    </button>
+                  </div>
+
+                  <h3 className="font-extrabold text-slate-900 text-base leading-snug">{s.name}</h3>
+                  <p className="text-xs text-blue-600 font-semibold mt-0.5">{s.provider}</p>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">{s.description}</p>
+
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl my-4 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Award Amount</span>
+                      <p className="font-black text-slate-900 text-sm mt-0.5">{s.amount}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Eligibility</span>
+                      <p className="font-medium text-slate-700 mt-0.5 truncate">{s.eligibility}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Deadline:</span>
+                    <span className={`font-bold ${days < 30 ? 'text-rose-600' : 'text-slate-800'}`}>
+                      {days < 0 ? 'Closed' : `${days}d left`}
+                    </span>
+                  </div>
+
+                  <a
+                    href={s.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors"
+                  >
+                    Apply Now <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

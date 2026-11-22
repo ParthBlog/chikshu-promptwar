@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFinance, CATEGORIES } from '../context/FinanceContext';
-import { validateAmount, validateText, sanitizeText } from '../utils/security';
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Plus, X } from 'lucide-react';
+import { validateAmount, validateText } from '../utils/security';
+import { getCategoryTheme } from '../utils/categoryTheme';
+import {
+  TrendingUp, TrendingDown, Wallet, PiggyBank, Plus, X,
+  Sparkles, ArrowRight, ShieldCheck, Users, GraduationCap,
+  Briefcase, CheckCircle2, AlertCircle, ArrowUpRight
+} from 'lucide-react';
+import { FinancialHealthGauge } from '../components/Graphics';
 
 function getCurrentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -13,16 +19,25 @@ function formatCurrency(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function StatCard({ label, value, sub, icon: Icon, inverted }) {
+function StatCard({ label, value, sub, icon: Icon, gradient, badgeText, badgeColor }) {
   return (
-    <div className={`border border-black rounded-xl p-5 flex items-start gap-4 ${inverted ? 'bg-black text-white' : 'bg-white'}`}>
-      <div className={`p-2 rounded-lg ${inverted ? 'bg-white' : 'bg-black'}`}>
-        <Icon className={`w-5 h-5 ${inverted ? 'text-black' : 'text-white'}`} />
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+      <div className="flex items-start justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${gradient} text-white shadow-sm`}>
+          <Icon className="w-4 h-4" />
+        </div>
       </div>
-      <div>
-        <p className={`text-xs font-medium uppercase tracking-wide ${inverted ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
-        <p className="text-2xl font-bold mt-0.5">{value}</p>
-        {sub && <p className={`text-xs mt-1 ${inverted ? 'text-gray-400' : 'text-gray-500'}`}>{sub}</p>}
+      <div className="mt-4">
+        <p className="text-2xl font-black text-slate-900 tracking-tight">{value}</p>
+        <div className="flex items-center gap-2 mt-1">
+          {badgeText && (
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}`}>
+              {badgeText}
+            </span>
+          )}
+          <span className="text-xs text-slate-500">{sub}</span>
+        </div>
       </div>
     </div>
   );
@@ -37,14 +52,20 @@ export default function Dashboard() {
   const monthTotal = getMonthTotal(month);
   const totalBudget = getTotalBudget(month);
   const remaining = totalBudget - monthTotal;
-  const savingsRate = totalBudget > 0 ? Math.max(0, ((remaining / totalBudget) * 100)).toFixed(1) : 0;
+  const budgetRatio = totalBudget > 0 ? (monthTotal / totalBudget) * 100 : 0;
   const totalSaved = savingsGoals.reduce((s, g) => s + (g.savedAmount || 0), 0);
+  const totalSavingsTarget = savingsGoals.reduce((s, g) => s + (g.targetAmount || 0), 0);
 
   const recent = expenses.slice(0, 5);
 
   // Quick add modal
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({
+    amount: '',
+    category: 'Food',
+    description: '',
+    date: new Date().toISOString().slice(0, 10),
+  });
   const [formError, setFormError] = useState('');
 
   function handleQuickAdd(e) {
@@ -72,203 +93,336 @@ export default function Dashboard() {
   const topCategory = Object.entries(catSpend).sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Welcome back, {userName || 'Student'} 👋
-        </h1>
-        <p className="text-gray-500 mt-1">
-          {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Top Welcome Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold mb-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Semester Financial Snapshot
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            Welcome back, {userName || 'Aryan'}! 👋
+          </h1>
+          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+
+        {/* Quick Launch Buttons */}
+        <div className="relative z-10 flex flex-wrap gap-2.5">
+          <button
+            onClick={() => navigate('/ai-copilot')}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            AI Copilot
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4 text-indigo-600" />
+            Log Expense
+          </button>
+        </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* 4 Key Stat Cards with Vibrant Gradients */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Spent"
           value={formatCurrency(monthTotal)}
           sub="This month"
           icon={TrendingDown}
-          inverted={false}
+          gradient="from-rose-500 to-pink-600"
+          badgeText={topCategory ? `Top: ${topCategory[0]}` : null}
+          badgeColor="bg-rose-100 text-rose-800"
         />
         <StatCard
           label="Remaining Budget"
           value={formatCurrency(Math.max(0, remaining))}
-          sub={remaining < 0 ? '⚠ Over budget' : 'Available'}
+          sub={remaining < 0 ? 'Over budget by ' + formatCurrency(Math.abs(remaining)) : 'Available safe spend'}
           icon={Wallet}
-          inverted={remaining < 0}
-        />
-        <StatCard
-          label="Savings Rate"
-          value={`${savingsRate}%`}
-          sub="Of monthly budget"
-          icon={TrendingUp}
-          inverted={false}
+          gradient="from-emerald-500 to-teal-600"
+          badgeText={remaining < 0 ? 'Exceeded' : 'On Track'}
+          badgeColor={remaining < 0 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}
         />
         <StatCard
           label="Total Saved"
           value={formatCurrency(totalSaved)}
-          sub="Across all goals"
+          sub={`Across ${savingsGoals.length} goals`}
           icon={PiggyBank}
-          inverted={false}
+          gradient="from-indigo-600 to-violet-600"
+          badgeText={totalSavingsTarget > 0 ? `${((totalSaved / totalSavingsTarget) * 100).toFixed(0)}% Achieved` : null}
+          badgeColor="bg-indigo-100 text-indigo-800"
+        />
+        <StatCard
+          label="Budget Health"
+          value={totalBudget > 0 ? `${Math.min(100, Math.round(budgetRatio))}%` : 'Not Set'}
+          sub={totalBudget > 0 ? `of ${formatCurrency(totalBudget)} consumed` : 'Define budget'}
+          icon={TrendingUp}
+          gradient="from-amber-500 to-orange-500"
+          badgeText={budgetRatio > 90 ? 'High' : 'Healthy'}
+          badgeColor={budgetRatio > 90 ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}
         />
       </div>
 
-      {/* Budget health */}
+      {/* Budget Runway Progress Bar */}
       {totalBudget > 0 && (
-        <div className="border border-black rounded-xl p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-lg">Budget Health</h2>
-            <span className={`text-sm font-semibold px-2 py-0.5 rounded border ${remaining >= 0 ? 'border-black bg-white' : 'bg-black text-white'}`}>
-              {remaining >= 0 ? 'On Track' : 'Over Budget'}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+            <span className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+              Monthly Budget Consumption
             </span>
+            <span>{formatCurrency(monthTotal)} / {formatCurrency(totalBudget)}</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
             <div
-              className="h-3 rounded-full bg-black transition-all"
-              style={{ width: `${Math.min(100, (monthTotal / totalBudget) * 100)}%` }}
+              className={`h-3 rounded-full transition-all duration-700 ${
+                budgetRatio > 100
+                  ? 'bg-rose-600'
+                  : budgetRatio > 80
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-500'
+              }`}
+              style={{ width: `${Math.min(100, budgetRatio)}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1.5">
-            <span>Spent: {formatCurrency(monthTotal)}</span>
-            <span>Budget: {formatCurrency(totalBudget)}</span>
+          <div className="flex items-center justify-between mt-2 text-[11px] text-slate-500">
+            <span>{remaining >= 0 ? `${formatCurrency(remaining)} remaining` : '⚠ Budget exceeded'}</span>
+            <button
+              onClick={() => navigate('/budget')}
+              className="text-indigo-600 font-bold hover:underline flex items-center gap-1"
+            >
+              Adjust Allocations <ArrowRight className="w-3 h-3" />
+            </button>
           </div>
-          {topCategory && (
-            <p className="text-sm text-gray-600 mt-2">
-              Highest spend: <strong>{topCategory[0]}</strong> ({formatCurrency(topCategory[1])})
-            </p>
-          )}
         </div>
       )}
 
-      {/* Recent + Quick Add */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent transactions */}
-        <div className="border border-black rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-lg">Recent Transactions</h2>
+      {/* Grid: Recent Activity & Student Life Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Transactions (2 cols) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Recent Student Transactions</h2>
+              <p className="text-xs text-slate-500">Latest expenses logged on your device</p>
+            </div>
             <button
               onClick={() => navigate('/expenses')}
-              className="text-sm underline font-medium"
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
             >
-              View all
+              View All ({expenses.length}) <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
+
           {recent.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-6">No expenses yet. Add your first one!</p>
+            <div className="py-8 text-center text-slate-400 text-xs">
+              No transactions logged yet. Click "Log Expense" above to add your first!
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {recent.map(exp => (
-                <li key={exp.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">{exp.description}</p>
-                    <p className="text-xs text-gray-500">{exp.category} • {exp.date}</p>
+            <div className="divide-y divide-slate-100">
+              {recent.map((e) => {
+                const theme = getCategoryTheme(e.category);
+                const Icon = theme.icon;
+                return (
+                  <div key={e.id} className="py-3 flex items-center justify-between hover:bg-slate-50/80 rounded-xl px-2 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl ${theme.bgLight} ${theme.text} border ${theme.border}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{e.description}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${theme.badge}`}>
+                            {e.category}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{e.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-sm font-black text-slate-900">
+                      -{formatCurrency(e.amount)}
+                    </span>
                   </div>
-                  <span className="font-bold text-sm">{formatCurrency(exp.amount)}</span>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Quick actions */}
-        <div className="border border-black rounded-xl p-5">
-          <h2 className="font-bold text-lg mb-4">Quick Actions</h2>
-          <div className="space-y-3">
+        {/* Student Quick Tools (1 col) */}
+        <div className="space-y-4">
+          {/* AI Banner Card */}
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 text-white shadow-md">
+            <div className="flex items-center gap-2 text-yellow-300 text-xs font-bold mb-2">
+              <Sparkles className="w-4 h-4" />
+              AI Student Financial Tip
+            </div>
+            <p className="text-xs leading-relaxed text-indigo-100 font-normal">
+              {topCategory
+                ? `Your top expense is ${topCategory[0]} (${formatCurrency(topCategory[1])}). College mess coupons or carpooling can cut this down by ~25%.`
+                : 'Maintain an emergency fund of at least ₹5,000 for unexpected semester exam fees or books!'}
+            </p>
             <button
-              onClick={() => setShowAdd(true)}
-              className="w-full flex items-center gap-3 p-4 border border-black rounded-xl hover:bg-black hover:text-white transition-colors font-medium"
+              onClick={() => navigate('/ai-copilot')}
+              className="mt-4 w-full py-2 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
             >
-              <Plus className="w-5 h-5" />
-              Add Expense
+              Open AI Copilot <ArrowRight className="w-3.5 h-3.5 text-indigo-600" />
             </button>
+          </div>
+
+          {/* Quick Shortcuts */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Student Life Hub</h3>
+            
             <button
-              onClick={() => navigate('/budget')}
-              className="w-full flex items-center gap-3 p-4 border border-black rounded-xl hover:bg-black hover:text-white transition-colors font-medium"
+              onClick={() => navigate('/scholarships')}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-sky-800 border border-slate-200/80 transition-all text-xs font-semibold text-left"
             >
-              <Wallet className="w-5 h-5" />
-              Set Budget
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-sky-100 text-sky-700">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold">16+ Indian Scholarships</div>
+                  <div className="text-[10px] text-slate-400 font-normal">NSP, Inspire, PMSS & more</div>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             </button>
+
             <button
-              onClick={() => navigate('/savings')}
-              className="w-full flex items-center gap-3 p-4 border border-black rounded-xl hover:bg-black hover:text-white transition-colors font-medium"
+              onClick={() => navigate('/parttime')}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200/80 transition-all text-xs font-semibold text-left"
             >
-              <PiggyBank className="w-5 h-5" />
-              Add Savings Goal
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold">Part-Time Jobs & Gigs</div>
+                  <div className="text-[10px] text-slate-400 font-normal">Tutoring, freelancing & campus jobs</div>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             </button>
+
             <button
-              onClick={() => navigate('/insights')}
-              className="w-full flex items-center gap-3 p-4 border border-black rounded-xl hover:bg-black hover:text-white transition-colors font-medium"
+              onClick={() => navigate('/splitbill')}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-800 border border-slate-200/80 transition-all text-xs font-semibold text-left"
             >
-              <TrendingUp className="w-5 h-5" />
-              View Insights
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold">Split Hostel Bill</div>
+                  <div className="text-[10px] text-slate-400 font-normal">Mess food & auto-share calculator</div>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Add Modal */}
+      {/* Quick Add Expense Modal */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-black rounded-2xl p-6 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-lg">Quick Add Expense</h3>
-              <button onClick={() => setShowAdd(false)}><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">Add New Expense</h3>
+              <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            {formError && <p className="text-sm text-black bg-gray-100 border border-black p-2 rounded mb-3">{formError}</p>}
-            <form onSubmit={handleQuickAdd} className="space-y-3">
+
+            {formError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleQuickAdd} className="space-y-4">
               <div>
-                <label className="text-sm font-medium block mb-1">Amount (₹)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹)</label>
                 <input
                   type="number"
-                  min="0"
                   step="0.01"
                   value={form.amount}
-                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="0.00"
-                  required
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  placeholder="e.g. 150"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  autoFocus
                 />
               </div>
+
               <div>
-                <label className="text-sm font-medium block mb-1">Category</label>
-                <select
-                  value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {CATEGORIES.map((cat) => {
+                    const theme = getCategoryTheme(cat);
+                    const Icon = theme.icon;
+                    const selected = form.category === cat;
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => setForm({ ...form, category: cat })}
+                        className={`p-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                          selected
+                            ? `${theme.bgLight} ${theme.text} border-indigo-500 ring-2 ring-indigo-500/20`
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[10px]">{cat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
               <div>
-                <label className="text-sm font-medium block mb-1">Description</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
                 <input
                   type="text"
                   value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="e.g. Lunch at canteen"
-                  maxLength={100}
-                  required
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="e.g. Canteen lunch, metro recharge..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
+
               <div>
-                <label className="text-sm font-medium block mb-1">Date</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
                 <input
                   type="date"
                   value={form.date}
-                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  required
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full bg-black text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-900 transition-colors"
-              >
-                Add Expense
-              </button>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdd(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+                >
+                  Save Expense
+                </button>
+              </div>
             </form>
           </div>
         </div>

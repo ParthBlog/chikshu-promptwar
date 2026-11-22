@@ -12,6 +12,8 @@ import Savings from './pages/Savings';
 import Scholarships from './pages/Scholarships';
 import PartTime from './pages/PartTime';
 import Insights from './pages/Insights';
+import AICopilot from './pages/AICopilot';
+import SplitBill from './pages/SplitBill';
 
 export default function App() {
   return (
@@ -27,11 +29,13 @@ export default function App() {
                   <Layout>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/ai-copilot" element={<AICopilot />} />
                       <Route path="/expenses" element={<Expenses />} />
                       <Route path="/budget" element={<Budget />} />
                       <Route path="/savings" element={<Savings />} />
                       <Route path="/scholarships" element={<Scholarships />} />
                       <Route path="/parttime" element={<PartTime />} />
+                      <Route path="/splitbill" element={<SplitBill />} />
                       <Route path="/insights" element={<Insights />} />
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>

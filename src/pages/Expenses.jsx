@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { useFinance, CATEGORIES } from '../context/FinanceContext';
+import { useFinance, CATEGORIES, AD_TAGS } from '../context/FinanceContext';
 import { validateAmount, validateText } from '../utils/security';
-import { Plus, Trash2, Download, Search, X, Filter } from 'lucide-react';
+import { getCategoryTheme } from '../utils/categoryTheme';
+import { Plus, Trash2, Download, Search, X, Filter, Calendar, Tag, ArrowUpDown, Receipt } from 'lucide-react';
+import { EmptyGraphic } from '../components/Graphics';
 
 function formatCurrency(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -9,7 +11,7 @@ function formatCurrency(n) {
 
 function exportCSV(expenses) {
   const headers = ['Date', 'Category', 'Description', 'Amount'];
-  const rows = expenses.map(e => [e.date, e.category, `"${e.description}"`, e.amount]);
+  const rows = expenses.map(e => [e.date, e.category, `"${e.description.replace(/"/g, '""')}"`, e.amount]);
   const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -25,10 +27,13 @@ export default function Expenses() {
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    amount: '', category: 'Food', description: '',
+    amount: '',
+    category: 'Food',
+    description: '',
     date: new Date().toISOString().slice(0, 10),
   });
   const [formError, setFormError] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -36,7 +41,7 @@ export default function Expenses() {
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [filterMinAmt, setFilterMinAmt] = useState('');
-  const [filterMaxAmt, setFilterMaxAmt] = useState('');
+  const [filterTags, setFilterTags] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
@@ -47,6 +52,7 @@ export default function Expenses() {
       if (filterTo && e.date > filterTo) return false;
       if (filterMinAmt && e.amount < parseFloat(filterMinAmt)) return false;
       if (filterMaxAmt && e.amount > parseFloat(filterMaxAmt)) return false;
+      if (filterTags.length > 0 && (!e.tags || !filterTags.some(t => e.tags.includes(t)))) return false;
       return true;
     });
   }, [expenses, search, filterCat, filterFrom, filterTo, filterMinAmt, filterMaxAmt]);
@@ -59,6 +65,29 @@ export default function Expenses() {
     if (!amtResult.valid) { setFormError(amtResult.error); return; }
     const descResult = validateText(form.description, { maxLength: 100, fieldName: 'Description' });
     if (!descResult.valid) { setFormError(descResult.error); return; }
+
+    dispatch({
+      type: 'ADD_EXPENSE',
+      payload: {
+        id: Date.now().toString(),
+        amount: amtResult.value,
+        category: form.category,
+        description: descResult.value,
+        date: form.date,
+        tags: selectedTags,
+      }
+    });
+
+    setShowForm(false);
+    setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
+    setSelectedTags([]);
+  }
+    ev.preventDefault();
+    const amtResult = validateAmount(form.amount);
+    if (!amtResult.valid) { setFormError(amtResult.error); return; }
+    const descResult = validateText(form.description, { maxLength: 100, fieldName: 'Description' });
+    if (!descResult.valid) { setFormError(descResult.error); return; }
+
     dispatch({
       type: 'ADD_EXPENSE',
       payload: {
@@ -69,186 +98,345 @@ export default function Expenses() {
         date: form.date,
       }
     });
-    setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
+
     setShowForm(false);
+    setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
     setFormError('');
   }
 
   function handleDelete(id) {
-    if (!confirm('Delete this expense?')) return;
-    dispatch({ type: 'DELETE_EXPENSE', payload: id });
+    if (window.confirm('Delete this expense?')) {
+      dispatch({ type: 'DELETE_EXPENSE', payload: id });
+    }
   }
 
-  function clearFilters() {
-    setSearch(''); setFilterCat(''); setFilterFrom(''); setFilterTo('');
-    setFilterMinAmt(''); setFilterMaxAmt('');
+  function resetFilters() {
+    setSearch('');
+    setFilterCat('');
+    setFilterFrom('');
+    setFilterTo('');
+    setFilterMinAmt('');
+    setFilterMaxAmt('');
   }
 
-  const hasFilters = search || filterCat || filterFrom || filterTo || filterMinAmt || filterMaxAmt;
+  const hasActiveFilters = search || filterCat || filterFrom || filterTo || filterMinAmt || filterMaxAmt;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-rose-600 via-pink-600 to-indigo-700 p-8 rounded-3xl text-white shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold">Expenses</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Track and manage your spending</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider mb-2">
+            <Receipt className="w-3.5 h-3.5" />
+            Financial Ledger
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Student Expense Tracker</h1>
+          <p className="mt-1 text-rose-100 text-xs sm:text-sm">
+            Categorize campus, mess, stationery, and hostel expenses with instant search & CSV exports.
+          </p>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex flex-wrap gap-2.5">
           <button
             onClick={() => exportCSV(filtered)}
-            className="flex items-center gap-2 px-4 py-2 border border-black rounded-lg text-sm font-medium hover:bg-gray-50"
+            disabled={filtered.length === 0}
+            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" />
+            Export CSV
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-900"
+            className="px-5 py-2.5 rounded-xl bg-white text-rose-700 hover:bg-rose-50 font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4" /> Add Expense
+            <Plus className="w-4 h-4 text-rose-600" />
+            Add Expense
           </button>
         </div>
       </div>
 
-      {/* Search + Filter bar */}
-      <div className="border border-black rounded-xl p-4 mb-5">
-        <div className="flex gap-2 mb-3">
+      {/* Summary KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Filtered Spend</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(total)}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{filtered.length} transactions shown</p>
+          </div>
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+            <Receipt className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Average Per Item</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">
+              {filtered.length > 0 ? formatCurrency(total / filtered.length) : '₹0'}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">Discipline metric</p>
+          </div>
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+            <ArrowUpDown className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Categories</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">
+              {new Set(filtered.map(e => e.category)).size} of {CATEGORIES.length}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">Spread across campus life</p>
+          </div>
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+            <Tag className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by description..."
-              className="w-full pl-9 pr-3 py-2 border border-black rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by description (e.g. canteen, metro, books)..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
-          <button
-            onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-2 px-3 py-2 border border-black rounded-lg text-sm font-medium ${showFilters ? 'bg-black text-white' : 'hover:bg-gray-50'}`}
-          >
-            <Filter className="w-4 h-4" /> Filters
-          </button>
-          {hasFilters && (
-            <button onClick={clearFilters} className="px-3 py-2 border border-black rounded-lg text-sm flex items-center gap-1 hover:bg-gray-50">
-              <X className="w-4 h-4" /> Clear
+
+          <div className="flex gap-2">
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+            >
+              <option value="">All Categories</option>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                showFilters || hasActiveFilters
+                  ? 'bg-rose-50 border-rose-300 text-rose-700'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filters
+              {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-rose-600" />}
             </button>
-          )}
+
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Extended Filter Drawer */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t border-gray-200">
+          <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
             <div>
-              <label className="text-xs font-medium block mb-1">Category</label>
-              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="w-full border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none">
-                <option value="">All</option>
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
+              <label className="block text-slate-500 font-semibold mb-1">From Date</label>
+              <input
+                type="date"
+                value={filterFrom}
+                onChange={(e) => setFilterFrom(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium block mb-1">From Date</label>
-              <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} className="w-full border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
+              <label className="block text-slate-500 font-semibold mb-1">To Date</label>
+              <input
+                type="date"
+                value={filterTo}
+                onChange={(e) => setFilterTo(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium block mb-1">To Date</label>
-              <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} className="w-full border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
+              <label className="block text-slate-500 font-semibold mb-1">Min Amount (₹)</label>
+              <input
+                type="number"
+                value={filterMinAmt}
+                onChange={(e) => setFilterMinAmt(e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium block mb-1">Min Amount (₹)</label>
-              <input type="number" value={filterMinAmt} onChange={e => setFilterMinAmt(e.target.value)} className="w-full border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1">Max Amount (₹)</label>
-              <input type="number" value={filterMaxAmt} onChange={e => setFilterMaxAmt(e.target.value)} className="w-full border border-black rounded-lg px-2 py-1.5 text-sm focus:outline-none" placeholder="Any" />
+              <label className="block text-slate-500 font-semibold mb-1">Max Amount (₹)</label>
+              <input
+                type="number"
+                value={filterMaxAmt}
+                onChange={(e) => setFilterMaxAmt(e.target.value)}
+                placeholder="5000"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200"
+              />
             </div>
           </div>
         )}
       </div>
 
-      {/* Running total */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <p className="text-sm text-gray-500">{filtered.length} transaction{filtered.length !== 1 ? 's' : ''}</p>
-        <p className="font-bold">Total: {formatCurrency(total)}</p>
-      </div>
+      {/* Expenses List Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        {filtered.length === 0 ? (
+          <EmptyGraphic
+            title="No expenses match your search"
+            message="Try clearing your filters or click 'Add Expense' to log a new purchase."
+          />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {filtered.map((e) => {
+              const theme = getCategoryTheme(e.category);
+              const Icon = theme.icon;
+              return (
+                <div
+                  key={e.id}
+                  className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50/80 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className={`p-2.5 rounded-xl ${theme.bgLight} ${theme.text} border ${theme.border}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{e.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${theme.badge}`}>
+                          {e.category}
+                        </span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {e.date}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-      {/* Expense list */}
-      {filtered.length === 0 ? (
-        <div className="border border-black rounded-xl p-10 text-center">
-          <p className="text-gray-400 text-sm">No expenses found. {hasFilters ? 'Try clearing your filters.' : 'Add your first expense!'}</p>
-        </div>
-      ) : (
-        <div className="border border-black rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-black text-white">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Date</th>
-                <th className="text-left px-4 py-3 font-medium">Description</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Category</th>
-                <th className="text-right px-4 py-3 font-medium">Amount</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((exp, i) => (
-                <tr key={exp.id} className={`border-t border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="px-4 py-3 text-gray-500">{exp.date}</td>
-                  <td className="px-4 py-3 font-medium">{exp.description}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="px-2 py-0.5 border border-black rounded-full text-xs">{exp.category}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-bold">{formatCurrency(exp.amount)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleDelete(exp.id)} className="text-gray-400 hover:text-black transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="text-base font-black text-slate-900">
+                      -{formatCurrency(e.amount)}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(e.id)}
+                      title="Delete expense"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Add Expense Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-black rounded-2xl p-6 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-lg">Add Expense</h3>
-              <button onClick={() => { setShowForm(false); setFormError(''); }}><X className="w-5 h-5" /></button>
-            </div>
-            {formError && <p className="text-sm bg-gray-100 border border-black p-2 rounded mb-3">{formError}</p>}
-            <form onSubmit={handleAdd} className="space-y-3">
-              <div>
-                <label className="text-sm font-medium block mb-1">Amount (₹) *</label>
-                <input type="number" min="0.01" step="0.01" value={form.amount}
-                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="0.00" required />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Category *</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Description *</label>
-                <input type="text" value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="e.g. Lunch at canteen" maxLength={100} required />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Date *</label>
-                <input type="date" value={form.date}
-                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  required />
-              </div>
-              <button type="submit" className="w-full bg-black text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-900 transition-colors">
-                Add Expense
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">Add New Expense</h3>
+              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {formError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleAdd} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  placeholder="e.g. 250"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {CATEGORIES.map((cat) => {
+                    const theme = getCategoryTheme(cat);
+                    const Icon = theme.icon;
+                    const selected = form.category === cat;
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => setForm({ ...form, category: cat })}
+                        className={`p-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                          selected
+                            ? `${theme.bgLight} ${theme.text} border-rose-500 ring-2 ring-rose-500/20`
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[10px]">{cat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="e.g. Books, Swiggy order, bus recharge..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+                >
+                  Save Expense
+                </button>
+              </div>
             </form>
           </div>
         </div>

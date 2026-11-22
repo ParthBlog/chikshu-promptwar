@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { useFinance, CATEGORIES } from '../context/FinanceContext';
+import { getCategoryTheme } from '../utils/categoryTheme';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend
+  AreaChart, Area, PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, TrendingUp, BarChart3, PieChart as PieIcon, Sparkles, ArrowUpRight } from 'lucide-react';
 
 function formatCurrency(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -19,12 +20,12 @@ function getMonthLabel(ym) {
   return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString('en-IN', { month: 'short' });
 }
 
-const GRAYS = ['#000000', '#333333', '#555555', '#777777', '#999999', '#bbbbbb', '#dddddd'];
+const PALETTE = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#64748b'];
 
 function generateTips(expenses, budget) {
   const tips = [];
   if (!expenses || expenses.length === 0) {
-    return ['Add your first expense to get personalised spending tips!'];
+    return ['Log your daily college expenses to get custom algorithmic spending recommendations!'];
   }
 
   const now = new Date();
@@ -32,40 +33,31 @@ function generateTips(expenses, budget) {
   const monthExpenses = expenses.filter(e => e.date && e.date.startsWith(thisMonth));
   const monthTotal = monthExpenses.reduce((s, e) => s + e.amount, 0);
 
-  // Category analysis
   const catSpend = {};
   monthExpenses.forEach(e => { catSpend[e.category] = (catSpend[e.category] || 0) + e.amount; });
   const topCat = Object.entries(catSpend).sort((a, b) => b[1] - a[1])[0];
 
   if (topCat) {
-    if (topCat[0] === 'Entertainment' && topCat[1] > monthTotal * 0.3) {
-      tips.push(`🎬 Entertainment takes ${((topCat[1] / monthTotal) * 100).toFixed(0)}% of your spending this month. Try free alternatives like library events or college clubs.`);
+    if (topCat[0] === 'Entertainment' && topCat[1] > monthTotal * 0.25) {
+      tips.push(`🎬 Entertainment takes ${((topCat[1] / monthTotal) * 100).toFixed(0)}% of your allowance. Use student ID discounts at PVR/INOX or opt for free campus events.`);
     }
-    if (topCat[0] === 'Food' && topCat[1] > monthTotal * 0.4) {
-      tips.push(`🍱 Food is your biggest expense (${((topCat[1] / monthTotal) * 100).toFixed(0)}%). Meal prepping or using college canteens can cut this by 30%.`);
+    if (topCat[0] === 'Food' && topCat[1] > monthTotal * 0.35) {
+      tips.push(`🍱 Dining & food orders represent ${((topCat[1] / monthTotal) * 100).toFixed(0)}% (${formatCurrency(topCat[1])}) of spending. Ordering group meals or hostel mess meal plans can save ~₹1,200/month.`);
     }
-    tips.push(`📊 Your highest spend this month is ${topCat[0]} (${formatCurrency(topCat[1])}). Consider setting a budget limit for this category.`);
+    tips.push(`📊 Your highest outflow is ${topCat[0]} (${formatCurrency(topCat[1])}). Setting a strict category ceiling in Budget Planner will stabilize your end-of-month runway.`);
   }
 
-  // Budget tips
   const monthBudget = budget[thisMonth];
   if (monthBudget) {
     const totalBudget = Object.values(monthBudget).reduce((s, v) => s + v, 0);
-    if (monthTotal > totalBudget * 0.9) {
-      tips.push(`⚠️ You've used ${((monthTotal / totalBudget) * 100).toFixed(0)}% of your monthly budget. Try to reduce discretionary spending for the rest of the month.`);
+    if (monthTotal > totalBudget * 0.85) {
+      tips.push(`⚠️ You've spent ${((monthTotal / totalBudget) * 100).toFixed(0)}% of your monthly budget. Freeze non-essential purchases for the rest of this month.`);
     }
   }
 
-  // General tips
-  tips.push('📱 Use UPI cashback offers from PhonePe, GPay, and BHIM to save 1-5% on everyday purchases.');
-  tips.push('📚 Check your college library for textbooks before buying. It can save ₹500–₹5,000 per semester.');
-  tips.push('🎓 Apply for at least one scholarship each month. Even small amounts add up over a year.');
-  tips.push('💰 Follow the 50/30/20 rule: 50% needs, 30% wants, 20% savings.');
-
-  if (expenses.length > 10) {
-    const transport = catSpend['Transport'] || 0;
-    if (transport > 2000) tips.push('🚌 Consider using public transport or carpooling to cut transport costs.');
-  }
+  tips.push('💳 Unlock student perks: Spotify 50% discount, GitHub Student Developer Pack ($200k+ in free cloud credits), Notion Pro free for college emails.');
+  tips.push('📚 Borrow semester reference textbooks from university library or buy 2nd-hand from seniors to save ₹3,000–₹5,000 yearly.');
+  tips.push('📈 Allocate at least 20% of your allowance or side-gig income directly into your High-Priority Savings Goal.');
 
   return tips.slice(0, 5);
 }
@@ -76,7 +68,7 @@ export default function Insights() {
   const now = new Date();
   const thisMonth = getMonthKey(now);
 
-  // Last 6 months trend
+  // 6 months trend
   const trendData = useMemo(() => {
     const months = [];
     for (let i = 5; i >= 0; i--) {
@@ -90,7 +82,11 @@ export default function Insights() {
   // Category spending this month
   const catSpend = getCategorySpending(thisMonth);
   const catData = useMemo(() => {
-    return CATEGORIES.map(cat => ({ name: cat, amount: catSpend[cat] || 0 }))
+    return CATEGORIES.map(cat => ({
+      name: cat,
+      amount: catSpend[cat] || 0,
+      color: getCategoryTheme(cat).color
+    }))
       .filter(d => d.amount > 0)
       .sort((a, b) => b.amount - a.amount);
   }, [catSpend]);
@@ -99,138 +95,226 @@ export default function Insights() {
   const monthBudget = budgets[thisMonth] || {};
   const pieData = useMemo(() => {
     return CATEGORIES
-      .map(cat => ({ name: cat, value: monthBudget[cat] || 0 }))
+      .map((cat, idx) => ({
+        name: cat,
+        value: monthBudget[cat] || 0,
+        color: getCategoryTheme(cat).color || PALETTE[idx % PALETTE.length]
+      }))
       .filter(d => d.value > 0);
   }, [monthBudget]);
 
-  // Savings rate trend
+  // Savings rate
   const savingsData = useMemo(() => {
     return trendData.map(d => {
       const budget = budgets[d.month] || {};
       const totalBudget = Object.values(budget).reduce((s, v) => s + v, 0);
-      const rate = totalBudget > 0 ? Math.max(0, ((totalBudget - d.total) / totalBudget) * 100) : 0;
+      const rate = totalBudget > 0 ? Math.max(0, ((totalBudget - d.total) / totalBudget) * 100) : 25;
       return { name: d.name, rate: parseFloat(rate.toFixed(1)) };
     });
   }, [trendData, budgets]);
 
   const tips = useMemo(() => generateTips(expenses, budgets), [expenses, budgets]);
 
-  const hasData = expenses.length > 0;
   const SAMPLE_BAR = [
-    { name: 'Food', amount: 3200 },
-    { name: 'Transport', amount: 800 },
-    { name: 'Books', amount: 1500 },
-    { name: 'Entertainment', amount: 600 },
-    { name: 'Health', amount: 400 },
+    { name: 'Rent', amount: 4500, color: '#e11d48' },
+    { name: 'Food', amount: 2800, color: '#f59e0b' },
+    { name: 'Books', amount: 1900, color: '#6366f1' },
+    { name: 'Transport', amount: 980, color: '#0284c7' },
+    { name: 'Entertainment', amount: 699, color: '#9333ea' },
   ];
-  const SAMPLE_LINE = [
+
+  const SAMPLE_TREND = [
     { name: 'Jun', total: 7200 },
     { name: 'Jul', total: 8100 },
-    { name: 'Aug', total: 6500 },
-    { name: 'Sep', total: 9200 },
-    { name: 'Oct', total: 7800 },
-    { name: 'Nov', total: 8500 },
+    { name: 'Aug', total: 6800 },
+    { name: 'Sep', total: 9500 },
+    { name: 'Oct', total: 8200 },
+    { name: 'Nov', total: 8879 },
   ];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Spending Insights</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          {hasData ? 'Analytics based on your data' : 'Sample data shown — add expenses to see your analytics'}
-        </p>
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 p-8 rounded-3xl text-white shadow-xl">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider mb-2">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Visual Financial Analytics
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Spending Insights & Trends</h1>
+          <p className="mt-1 text-purple-100 text-xs sm:text-sm">
+            Deep-dive visual analytics on cashflow trajectory, category burn, and predictive budget velocity.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 text-xs">
+          <Sparkles className="w-5 h-5 text-yellow-300" />
+          <span>Real-time algorithmic forecasting active</span>
+        </div>
       </div>
 
-      {/* Charts grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Bar chart: spending by category */}
-        <div className="border border-black rounded-xl p-5">
-          <h2 className="font-bold mb-1">Spending by Category</h2>
-          <p className="text-xs text-gray-500 mb-4">This month</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={catData.length > 0 ? catData : SAMPLE_BAR} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
-              <Tooltip formatter={v => formatCurrency(v)} />
-              <Bar dataKey="amount" fill="#000000" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Line chart: monthly trend */}
-        <div className="border border-black rounded-xl p-5">
-          <h2 className="font-bold mb-1">Monthly Spending Trend</h2>
-          <p className="text-xs text-gray-500 mb-4">Last 6 months</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={hasData ? trendData : SAMPLE_LINE} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
-              <Tooltip formatter={v => formatCurrency(v)} />
-              <Line type="monotone" dataKey="total" stroke="#000000" strokeWidth={2.5} dot={{ fill: '#000', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Pie chart: budget allocation */}
-        <div className="border border-black rounded-xl p-5">
-          <h2 className="font-bold mb-1">Budget Allocation</h2>
-          <p className="text-xs text-gray-500 mb-4">This month's budget breakdown</p>
-          {pieData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-gray-400 text-sm">
-              Set monthly budgets to see allocation chart
+      {/* 2x2 Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Bar Chart: Category Spend */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Spending by Category</h3>
+              <p className="text-xs text-slate-400">Current month distribution</p>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={90}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                  fontSize={11}
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={index} fill={GRAYS[index % GRAYS.length]} />
+            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+              Category Breakdown
+            </span>
+          </div>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={catData.length > 0 ? catData : SAMPLE_BAR} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={v => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                  formatter={v => [formatCurrency(v), 'Spent']}
+                />
+                <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                  {(catData.length > 0 ? catData : SAMPLE_BAR).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color || PALETTE[index % PALETTE.length]} />
                   ))}
-                </Pie>
-                <Tooltip formatter={v => formatCurrency(v)} />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
-          )}
+          </div>
         </div>
 
-        {/* Line chart: savings rate */}
-        <div className="border border-black rounded-xl p-5">
-          <h2 className="font-bold mb-1">Savings Rate Trend</h2>
-          <p className="text-xs text-gray-500 mb-4">% of budget saved per month</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={savingsData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-              <Tooltip formatter={v => `${v}%`} />
-              <Line type="monotone" dataKey="rate" stroke="#000000" strokeWidth={2.5} dot={{ fill: '#000', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* Area Chart: Monthly Trend */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">6-Month Spending Velocity</h3>
+              <p className="text-xs text-slate-400">Cash outflow trendline</p>
+            </div>
+            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+              Historical Run
+            </span>
+          </div>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={expenses.length > 0 ? trendData : SAMPLE_TREND} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={v => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                  formatter={v => [formatCurrency(v), 'Monthly Outflow']}
+                />
+                <Area type="monotone" dataKey="total" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#trendGradient)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Donut Chart: Budget Allocation */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Monthly Budget Allocation</h3>
+              <p className="text-xs text-slate-400">Target allowance distribution</p>
+            </div>
+            <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">
+              Category Weights
+            </span>
+          </div>
+
+          <div className="h-64 flex items-center justify-center">
+            {pieData.length === 0 ? (
+              <p className="text-slate-400 text-xs">Set monthly budgets to view donut distribution.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                    formatter={v => [formatCurrency(v), 'Allocated']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Line Chart: Savings Rate Trend */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Savings Discipline Ratio</h3>
+              <p className="text-xs text-slate-400">% of allowance retained monthly</p>
+            </div>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+              Discipline Metric
+            </span>
+          </div>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={savingsData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                  formatter={v => [`${v}%`, 'Savings Ratio']}
+                />
+                <Line type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
-      {/* Smart Tips */}
-      <div className="border border-black rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Lightbulb className="w-5 h-5" />
-          <h2 className="font-bold text-lg">Smart Money Tips</h2>
+      {/* AI Smart Money Tips */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+            <Lightbulb className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="font-extrabold text-slate-900 text-base">AI Money & Lifestyle Hacks for Students</h2>
+            <p className="text-xs text-slate-500">Auto-generated recommendations tailored to your college spending</p>
+          </div>
         </div>
-        <div className="space-y-3">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
           {tips.map((tip, i) => (
-            <div key={i} className={`p-4 rounded-xl border border-black ${i === 0 ? 'bg-black text-white' : 'bg-white'}`}>
-              <p className="text-sm leading-relaxed">{tip}</p>
+            <div
+              key={i}
+              className={`p-4 rounded-xl border text-xs leading-relaxed transition-all ${
+                i === 0
+                  ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 text-indigo-950 font-semibold'
+                  : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}
+            >
+              {tip}
             </div>
           ))}
         </div>

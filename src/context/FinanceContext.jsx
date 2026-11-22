@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { getArray, getObject, setItem, KEYS } from '../utils/storage';
+import { getSampleStudentData } from '../utils/demoData';
 
 const FinanceContext = createContext(null);
 
@@ -59,7 +60,8 @@ function financeReducer(state, action) {
       const savingsGoals = state.savingsGoals.map(g => {
         if (g.id !== goalId) return g;
         const newSaved = Math.min(g.targetAmount, (g.savedAmount || 0) + amount);
-        return { ...g, savedAmount: newSaved, completed: newSaved >= g.targetAmount };
+        const contributions = [...(g.contributions || []), { date: new Date().toISOString().slice(0, 10), amount }];
+        return { ...g, savedAmount: newSaved, completed: newSaved >= g.targetAmount, contributions };
       });
       return { ...state, savingsGoals };
     }
@@ -72,11 +74,23 @@ function financeReducer(state, action) {
 export function FinanceProvider({ children }) {
   const [state, dispatch] = useReducer(financeReducer, initialState);
 
-  // Load from localStorage on mount
+  // Load from localStorage or auto-seed demo data on mount
   useEffect(() => {
-    const expenses = getArray(KEYS.EXPENSES);
-    const budgets = getObject(KEYS.BUDGETS, {});
-    const savingsGoals = getArray(KEYS.SAVINGS_GOALS);
+    let expenses = getArray(KEYS.EXPENSES);
+    let budgets = getObject(KEYS.BUDGETS, {});
+    let savingsGoals = getArray(KEYS.SAVINGS_GOALS);
+
+    // If completely empty, auto-populate with realistic demo dataset
+    if (expenses.length === 0 && Object.keys(budgets).length === 0) {
+      const sample = getSampleStudentData();
+      expenses = sample.expenses;
+      budgets = sample.budgets;
+      savingsGoals = sample.savingsGoals;
+      setItem(KEYS.EXPENSES, expenses);
+      setItem(KEYS.BUDGETS, budgets);
+      setItem(KEYS.SAVINGS_GOALS, savingsGoals);
+    }
+
     dispatch({ type: 'LOAD_DATA', payload: { expenses, budgets, savingsGoals } });
   }, []);
 
@@ -103,7 +117,6 @@ export function FinanceProvider({ children }) {
 
   // Helpers
   function getMonthExpenses(month) {
-    // month: 'YYYY-MM'
     return state.expenses.filter(e => e.date && e.date.startsWith(month));
   }
 
@@ -149,3 +162,4 @@ export function useFinance() {
 }
 
 export const CATEGORIES = ['Food', 'Transport', 'Books', 'Rent', 'Entertainment', 'Health', 'Other'];
+export const AD_TAGS = ['Family', 'College', 'Hostel'];
