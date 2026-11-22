@@ -11,20 +11,20 @@ export function getSampleStudentData() {
   const d = (day) => `${currentYear}-${monthNum}-${String(day).padStart(2, '0')}`;
 
   const demoExpenses = [
-    { id: 'exp-1', amount: 120, category: 'Food', description: 'College Canteen Lunch & Chai', date: d(2) },
-    { id: 'exp-2', amount: 450, category: 'Transport', description: 'Monthly Metro SmartCard Recharge', date: d(3) },
-    { id: 'exp-3', amount: 1250, category: 'Books', description: 'Data Structures & Algorithms Textbook', date: d(5) },
-    { id: 'exp-4', amount: 4500, category: 'Rent', description: 'Hostel / Shared PG Monthly Share', date: d(1) },
-    { id: 'exp-5', amount: 280, category: 'Food', description: 'Weekend Dinner with Roommates', date: d(8) },
-    { id: 'exp-6', amount: 199, category: 'Entertainment', description: 'Spotify Student Subscription', date: d(10) },
-    { id: 'exp-7', amount: 350, category: 'Health', description: 'Vitamins & First-Aid Supplies', date: d(11) },
-    { id: 'exp-8', amount: 180, category: 'Transport', description: 'Auto-rickshaw to Hackathon Venue', date: d(12) },
-    { id: 'exp-9', amount: 650, category: 'Books', description: 'Lab Manuals & Engineering Stationery', date: d(14) },
-    { id: 'exp-10', amount: 220, category: 'Food', description: 'Late Night Exam Snacks & Coffee', date: d(15) },
-    { id: 'exp-11', amount: 499, category: 'Entertainment', description: 'Movie Ticket & Popcorn (Student Discount)', date: d(17) },
-    { id: 'exp-12', amount: 300, category: 'Other', description: 'Laundry & Hostel Maintenance', date: d(18) },
-    { id: 'exp-13', amount: 160, category: 'Food', description: 'Juice & Evening Breakfast', date: d(19) },
-    { id: 'exp-14', amount: 350, category: 'Transport', description: 'Bus pass return journey', date: d(20) },
+    { id: 'exp-1', amount: 120, category: 'Food', description: 'College Canteen Lunch & Chai', date: d(2), tags: ['College'] },
+    { id: 'exp-2', amount: 450, category: 'Transport', description: 'Monthly Metro SmartCard Recharge', date: d(3), tags: ['College'] },
+    { id: 'exp-3', amount: 1250, category: 'Books', description: 'Data Structures & Algorithms Textbook', date: d(5), tags: ['College'] },
+    { id: 'exp-4', amount: 4500, category: 'Rent', description: 'Hostel / Shared PG Monthly Share', date: d(1), tags: ['Hostel'] },
+    { id: 'exp-5', amount: 280, category: 'Food', description: 'Weekend Dinner with Roommates', date: d(8), tags: ['Hostel'] },
+    { id: 'exp-6', amount: 199, category: 'Entertainment', description: 'Spotify Student Subscription', date: d(10), tags: [] },
+    { id: 'exp-7', amount: 350, category: 'Health', description: 'Vitamins & Care Package from Home', date: d(11), tags: ['Family'] },
+    { id: 'exp-8', amount: 180, category: 'Transport', description: 'Auto-rickshaw to Hackathon Venue', date: d(12), tags: ['College'] },
+    { id: 'exp-9', amount: 650, category: 'Books', description: 'Lab Manuals & Engineering Stationery', date: d(14), tags: ['College'] },
+    { id: 'exp-10', amount: 220, category: 'Food', description: 'Late Night Hostel Exam Snacks & Coffee', date: d(15), tags: ['Hostel'] },
+    { id: 'exp-11', amount: 499, category: 'Entertainment', description: 'Movie Ticket & Popcorn (Student Discount)', date: d(17), tags: [] },
+    { id: 'exp-12', amount: 300, category: 'Other', description: 'Laundry & Hostel Maintenance', date: d(18), tags: ['Hostel'] },
+    { id: 'exp-13', amount: 500, category: 'Other', description: 'Family Emergency Medicine Support', date: d(19), tags: ['Family'] },
+    { id: 'exp-14', amount: 350, category: 'Transport', description: 'Bus pass return journey to hometown', date: d(20), tags: ['Family'] },
   ];
 
   const demoBudgets = {

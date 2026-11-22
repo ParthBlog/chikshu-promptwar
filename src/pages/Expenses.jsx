@@ -224,6 +224,43 @@ export default function Expenses() {
           </div>
         </div>
 
+        {/* Quick Ad-Tags Filter Pills (Family, College, Hostel) */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#30363D]">
+          <span className="text-xs font-bold text-[#94A3B8] flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-[#06B6D4]" />
+            Tags:
+          </span>
+          {AD_TAGS.map(tag => {
+            const isSelected = filterTags.includes(tag);
+            return (
+              <button
+                type="button"
+                key={tag}
+                onClick={() => {
+                  if (isSelected) setFilterTags(filterTags.filter(t => t !== tag));
+                  else setFilterTags([...filterTags, tag]);
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#8B5CF6] text-white border-[#8B5CF6] shadow-sm shadow-[#8B5CF6]/40'
+                    : 'bg-[#0D1117] text-[#94A3B8] border-[#30363D] hover:border-[#8B5CF6]/60 hover:text-[#F8FAFC]'
+                }`}
+              >
+                #{tag}
+              </button>
+            );
+          })}
+          {filterTags.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilterTags([])}
+              className="text-xs text-[#06B6D4] hover:underline font-bold ml-1 cursor-pointer"
+            >
+              Clear tags ({filterTags.length})
+            </button>
+          )}
+        </div>
+
         {/* Extended Filter Drawer */}
         {showFilters && (
           <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
@@ -292,10 +329,15 @@ export default function Expenses() {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-slate-900">{e.description}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${theme.badge}`}>
                           {e.category}
                         </span>
+                        {e.tags && e.tags.map(t => (
+                          <span key={t} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/40">
+                            #{t}
+                          </span>
+                        ))}
                         <span className="text-xs text-slate-400 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {e.date}

@@ -17,6 +17,7 @@ export default function SplitBill() {
   const [newFriend, setNewFriend] = useState('');
   const [copied, setCopied] = useState(false);
   const [addedToExpenses, setAddedToExpenses] = useState(false);
+  const [billTag, setBillTag] = useState('Hostel');
 
   function handleAddFriend(e) {
     e.preventDefault();
@@ -81,22 +82,20 @@ export default function SplitBill() {
     setTimeout(() => setCopied(false), 2500);
   }
 
-  // Add each friend share as a separate expense entry
+  // Add user's share as an expense entry with tag
   function addShareToExpenses() {
     if (addedToExpenses) return;
-    friends.forEach(f => {
-      const amt = Math.round(shares[f] || perPersonShare);
-      dispatch({
-        type: 'ADD_EXPENSE',
-        payload: {
-          id: Date.now().toString() + f,
-          amount: amt,
-          category: 'Food',
-          description: `Split: ${billTitle} – ${f}`,
-          date: new Date().toISOString().slice(0, 10),
-          tags: [],
-        }
-      });
+    const myShare = Math.round(shares['You'] || perPersonShare);
+    dispatch({
+      type: 'ADD_EXPENSE',
+      payload: {
+        id: Date.now().toString(),
+        amount: myShare,
+        category: 'Food',
+        description: `My split: ${billTitle} (${friends.length} friends)`,
+        date: new Date().toISOString().slice(0, 10),
+        tags: [billTag],
+      }
     });
     setAddedToExpenses(true);
     setTimeout(() => setAddedToExpenses(false), 3000);
@@ -194,12 +193,63 @@ export default function SplitBill() {
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 flex items-center gap-1"
+                className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Person
               </button>
             </form>
+          </div>
+
+          {/* Individual Friend Shares (Customizable) */}
+          <div className="pt-4 border-t border-[#30363D]">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-bold text-[#F8FAFC]">Custom Shares Per Friend (₹)</label>
+              <button
+                type="button"
+                onClick={distributeEvenly}
+                className="text-xs text-[#06B6D4] hover:underline font-bold"
+              >
+                ⟲ Distribute Evenly
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {friends.map((f) => (
+                <div key={f} className="flex items-center justify-between p-2 rounded-xl bg-[#0D1117] border border-[#30363D]">
+                  <span className="text-xs font-semibold text-[#F8FAFC] truncate max-w-[100px]">{f}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[#94A3B8]">₹</span>
+                    <input
+                      type="number"
+                      value={shares[f] ?? Math.round(perPersonShare)}
+                      onChange={(e) => handleShareChange(f, e.target.value)}
+                      className="w-20 px-2 py-1 rounded-lg border border-[#30363D] bg-[#161B22] text-[#F8FAFC] text-xs font-bold text-right"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tag for this Split Expense */}
+          <div className="pt-4 border-t border-[#30363D]">
+            <label className="block text-xs font-bold text-[#F8FAFC] mb-2">Assign Ad-Tag to this Split:</label>
+            <div className="flex gap-2">
+              {['Hostel', 'College', 'Family'].map((tag) => (
+                <button
+                  type="button"
+                  key={tag}
+                  onClick={() => setBillTag(tag)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    billTag === tag
+                      ? 'bg-[#8B5CF6] text-white border-[#8B5CF6] shadow-md shadow-[#8B5CF6]/30'
+                      : 'bg-[#0D1117] text-[#94A3B8] border-[#30363D] hover:border-[#8B5CF6]/50'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
