@@ -82,27 +82,6 @@ export default function Expenses() {
     setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
     setSelectedTags([]);
   }
-    ev.preventDefault();
-    const amtResult = validateAmount(form.amount);
-    if (!amtResult.valid) { setFormError(amtResult.error); return; }
-    const descResult = validateText(form.description, { maxLength: 100, fieldName: 'Description' });
-    if (!descResult.valid) { setFormError(descResult.error); return; }
-
-    dispatch({
-      type: 'ADD_EXPENSE',
-      payload: {
-        id: Date.now().toString(),
-        amount: amtResult.value,
-        category: form.category,
-        description: descResult.value,
-        date: form.date,
-      }
-    });
-
-    setShowForm(false);
-    setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
-    setFormError('');
-  }
 
   function handleDelete(id) {
     if (window.confirm('Delete this expense?')) {
