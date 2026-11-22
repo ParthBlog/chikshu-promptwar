@@ -73,8 +73,8 @@ const JOBS = [
     incomeMin: 3000, incomeMax: 6000,
     hours: '10 hrs/week (On-Campus)',
     skillLevel: 'Punctuality',
-    howToApply: '#',
-    description: 'Help manage book lending systems and computer terminal logins. Ample downtime to study during shifts.',
+    howToApply: 'https://www.ncs.gov.in',
+    description: 'Help manage book lending systems and computer terminal logins. Apply via your university Dean of Student Welfare (DSW) or National Career Service (NCS).',
   },
   {
     id: 'j7',

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useFinance, CATEGORIES } from '../context/FinanceContext';
+import { useFinance, CATEGORIES, AD_TAGS } from '../context/FinanceContext';
 import { validateAmount, validateText } from '../utils/security';
 import { getCategoryTheme } from '../utils/categoryTheme';
 import {
@@ -60,6 +60,7 @@ export default function Dashboard() {
 
   // Quick add modal
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [form, setForm] = useState({
     amount: '',
     category: 'Food',
@@ -82,10 +83,12 @@ export default function Dashboard() {
         category: form.category,
         description: descResult.value,
         date: form.date,
+        tags: selectedTags,
       }
     });
     setShowAdd(false);
     setForm({ amount: '', category: 'Food', description: '', date: new Date().toISOString().slice(0, 10) });
+    setSelectedTags([]);
     setFormError('');
   }
 
@@ -236,10 +239,15 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-800">{e.description}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                           <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${theme.badge}`}>
                             {e.category}
                           </span>
+                          {e.tags && e.tags.map(t => (
+                            <span key={t} className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                              #{t}
+                            </span>
+                          ))}
                           <span className="text-[11px] text-slate-400">{e.date}</span>
                         </div>
                       </div>
@@ -381,6 +389,32 @@ export default function Dashboard() {
                       >
                         <Icon className="w-4 h-4" />
                         <span className="text-[10px]">{cat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Ad-Tags (Campus Context)</label>
+                <div className="flex flex-wrap gap-2">
+                  {AD_TAGS.map(tag => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => {
+                          if (isSelected) setSelectedTags(selectedTags.filter(t => t !== tag));
+                          else setSelectedTags([...selectedTags, tag]);
+                        }}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]'
+                            : 'bg-[#0D1117] text-[#94A3B8] border-[#30363D] hover:border-[#8B5CF6]/50'
+                        }`}
+                      >
+                        #{tag}
                       </button>
                     );
                   })}

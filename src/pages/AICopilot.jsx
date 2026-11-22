@@ -89,6 +89,7 @@ export default function AICopilot() {
   // Suggested Prompts
   const promptChips = [
     "How to survive this month on remaining budget?",
+    "Break down my hostel vs college spending",
     "Analyze my biggest spending leaks",
     "Generate a 50/30/20 student budget",
     "How to save ₹20,000 for a laptop?",
@@ -99,7 +100,16 @@ export default function AICopilot() {
     const q = query.toLowerCase();
     let reply = "";
 
-    if (q.includes('survive') || q.includes('remaining') || q.includes('runway')) {
+    if (q.includes('hostel') || q.includes('college') || q.includes('family') || q.includes('tag')) {
+      const hostelSpend = expenses.filter(e => e.tags?.includes('Hostel')).reduce((s, e) => s + e.amount, 0);
+      const collegeSpend = expenses.filter(e => e.tags?.includes('College')).reduce((s, e) => s + e.amount, 0);
+      const familySpend = expenses.filter(e => e.tags?.includes('Family')).reduce((s, e) => s + e.amount, 0);
+      reply = `🏷️ **Ad-Tag Financial Intelligence Breakdown:**\n\n` +
+        `- 🏠 **#Hostel Expenses:** **${formatCurrency(hostelSpend)}** (rent, mess dues, roommate splits)\n` +
+        `- 🎓 **#College Expenses:** **${formatCurrency(collegeSpend)}** (books, tuition, lab stationery, metro pass)\n` +
+        `- 👨‍👩‍👧 **#Family Contributions:** **${formatCurrency(familySpend)}** (home travel, care packages, medicine)\n\n` +
+        `💡 **Copilot Recommendation:** ${hostelSpend > collegeSpend ? 'Hostel living accounts for your largest outflow. Use the **Split Roommate Bill** tool to auto-split shared Wi-Fi, electricity, and snacks with flatmates!' : 'Academic expenses are your highest tagged priority. Claim eligible education grants from the **Scholarships** tab to offset tuition and textbook costs.'}`;
+    } else if (q.includes('survive') || q.includes('remaining') || q.includes('runway')) {
       const dailyLeft = remainingBudget > 0 ? (remainingBudget / 10).toFixed(0) : 0;
       reply = `💡 **Survival Strategy for Remaining Month:**\n- Your remaining budget is **${formatCurrency(remainingBudget)}**.\n- That gives you an average daily spending cap of **${formatCurrency(dailyLeft)}/day** for the next 10 days.\n- **Action 1:** Freeze entertainment & ordering food via Swiggy/Zomato; stick strictly to mess/college canteen.\n- **Action 2:** Use metro/bus smart cards rather than cab aggregators.\n- **Action 3:** Check the **Split Bill** tab to collect any pending dues from roommates!`;
     } else if (q.includes('leak') || q.includes('spending') || q.includes('biggest')) {
