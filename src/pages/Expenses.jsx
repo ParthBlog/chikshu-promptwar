@@ -402,7 +402,29 @@ export default function Expenses() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                <div className="mt-2">
+  <label className="block text-xs font-semibold text-slate-600 mb-1">Tags</label>
+  <div className="flex flex-wrap gap-2">
+    {AD_TAGS.map(tag => (
+      <label key={tag} className="inline-flex items-center space-x-1">
+        <input
+          type="checkbox"
+          checked={selectedTags.includes(tag)}
+          onChange={e => {
+            if (e.target.checked) {
+              setSelectedTags([...selectedTags, tag]);
+            } else {
+              setSelectedTags(selectedTags.filter(t => t !== tag));
+            }
+          }}
+          className="form-checkbox h-4 w-4 text-primary"
+        />
+        <span className="text-xs text-slate-700">{tag}</span>
+      </label>
+    ))}
+  </div>
+</div>
+<label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
                 <input
                   type="text"
                   value={form.description}
